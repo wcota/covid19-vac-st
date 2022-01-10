@@ -1,19 +1,19 @@
 program sirs
 implicit none
 
-real*8 :: t0, tN, h, ti, dt, poptotal, R0, soma, kmed, csipop, gama, ptime,imtime, auxreal
-integer :: HH, ii, iii, j, jj, amost, namost, ig, dia, cenario, l, faixa, ifaixa, vacina
+real*8 :: t0, tN, h, ti, dt, poptotal, R0, soma, kmed, csipop, dia, ddia, dcsi, gama,auxreal,ptime
+integer :: HH, ii, iii, j, jj, amost, namost, diai, csii, Hdia, Hcsi, ig, cenario, l, faixa, ifaixa,vacina
 
-real*8, allocatable :: lambda(:,:), csi(:,:), mu(:,:), beta(:,:), alfa(:,:), nu(:,:), diafx(:),kmedioaux(:,:),alfadp(:),ef(:),&
+real*8, allocatable :: lambda(:,:), csi(:,:), mu(:,:), beta(:,:), alfa(:,:), nu(:,:),kmedioaux(:,:), alfadp(:), ef(:), &
 &tau(:,:), N(:,:), Naux(:,:), k(:,:,:), kk(:,:), kmedio(:), Nmedio(:,:,:), peso(:), populacao(:), theta(:), kaux(:),reducao(:)
 
-character*199 :: string, string1, string2, string3, string4, string5, string6
+character*199 :: string, string1, string2, string3
 
 !#######################################
 !parameters
 
 t0 = 0d0		!Beginning of the epidemic
-tN = 500d0		!Maximum time considered for analyzing the results
+tN = 1000d0		!Maximum time considered for analyzing the results
 HH = 1000		!Number of intervals for numerical integration
 h = (tN - t0)/(HH*1d0)
 poptotal = 100000d0	!Total population considered (what interferes the results is the proportion of the population for each age group)
@@ -22,9 +22,10 @@ namost = 16		!Number of age groups considered
 !#######################################
 !Initial conditions
 
-allocate(lambda(2,16), csi(5,16), mu(2,16), beta(4,16), alfa(4,16), nu(3,16), tau(2,16), N(17,16),diafx(16), kaux(2), ef(16), &
-&Naux(17,16), kk(16,16), k(17,16,4), kmedio(16), Nmedio(HH,17,16),peso(16), populacao(16), theta(16),kmedioaux(2,16), alfadp(16),&
-&reducao(16))
+
+allocate(lambda(2,16), csi(5,16), mu(2,16), beta(4,16), alfa(4,16), nu(3,16), tau(2,16), N(17,16), kaux(2), ef(16), &
+&Naux(17,16), kk(16,16), k(17,16,4), kmedio(16), Nmedio(HH,17,16),peso(16), populacao(16), theta(16),kmedioaux(2,16),&
+&reducao(16),alfadp(16))
 
     !Indices for each age group
     !1:  0-4
@@ -44,26 +45,20 @@ allocate(lambda(2,16), csi(5,16), mu(2,16), beta(4,16), alfa(4,16), nu(3,16), ta
     !15: 70-74
     !16: 75+
 
- dia = 30
- ig = 2
- cenario = 2
- R0 = 1.30d0
- csipop = 0.00150d0 	
- vacina = 0
+R0 = 1.3d0
+ig = 2
+cenario = 2
+vacina = 0
 
-!dia = delay in starting vaccination
-!ig = vaccination strategy
 !R0 = R0 value calculated from contacts for social distancing
+!ig = vaccination strategy
 !cenario = contact patterns scenario
 !vacina = which efficacies will be used (this variable is used for when we have more than one type of vaccine, eg vaccine = 0 => coronavac data)
-!csipop = total vaccination rate
 
 ! cenario = 0 all			!100% of all contacts 							!used in results
 ! cenario = 1 all without school	!excludes contacts only from schools 					!not used in results
 ! cenario = 2 all with sd		!considers the reduction of contact in the social distancing scenario 	!used in the results
 ! cenario = 3 lockdown			!considers contact reduction in lockdown scenario			!not used in results
-
-!vacina = 0 (coronavac), vacina = 1 (pfizer/astrazeneca)
 
 !ig's:
 !1: All elders, (60+) => all adults (20-59) => all children (0-19)
@@ -78,29 +73,17 @@ allocate(lambda(2,16), csi(5,16), mu(2,16), beta(4,16), alfa(4,16), nu(3,16), ta
 ef = 0			!where the data will be stored for effectiveness against infection
 reducao = 0		!where data will be stored for effectiveness against deaths
 
-open(1,file="./Data/vaccines-data.dat")			!reads the efficacy data of the vaccine considered
+open(1,file="./data/vaccines-data.dat")		!reads the efficacy data of the vaccine considered
 
 read(1,*)
 
-if (vacina .eq. 0) then   !auxreal has no meaning, it's just to read the column we don't want and jump to the next value of interest
+if (vacina .eq. 0) then 		!auxreal has no meaning, it's just to read the column we don't want and jump to the next value of interest
 
-    ptime = 21d0 !1/nu_p		
-    imtime = 7d0 			!CORONAVAC
+    ptime = 21d0			!1/nu_p
 
     do ii = 1,16
 
         read(1,*) auxreal, reducao(ii), auxreal, ef(ii)
-
-    end do
-
-else if (vacina .eq. 1) then
-
-    ptime = 21d0 !tempo de proteção
-    imtime = 35d0 !tempo de imunização			!AZ/PFIZER
-
-    do ii = 1,16
-
-        read(1,*) reducao(ii), auxreal, ef(ii), auxreal
 
     end do
 
@@ -110,7 +93,6 @@ reducao = reducao/100d0
 ef = ef/100d0
 
 close(1)
-
 
 faixa = 0
 
@@ -130,7 +112,8 @@ end if
 
  Nmedio = 0d0
 
-if (cenario .eq. 0) then  			!these if's will read the contact patterns equivalent to the scenario (and country) used in the simulation
+
+if (cenario .eq. 0) then		!these if's will read the contact patterns equivalent to the scenario (and country) used in the simulation
 
  kmedio = [9.06104972622234,&
 &18.53416619469897,&
@@ -152,7 +135,7 @@ if (cenario .eq. 0) then  			!these if's will read the contact patterns equivale
     !com escola
 
 
- open(33,file="./Data/Brazil/contact_all.dat")
+ open(33,file="./data/Brazil/contact_all.dat")
 
     do ii = 1,16
 
@@ -181,9 +164,9 @@ else if (cenario .eq. 1) then
 &3.5519870345904874,&
 &2.892123631908877]
 
- kk = 0d0 
+ kk = 0d0
 
- open(33,file="./Data/Brazil/contact_all-w_school.dat")
+ open(33,file="./data/Brazil/contact_all-w_school.dat")
 
     do ii = 1,16
 
@@ -214,7 +197,7 @@ else if (cenario .eq. 2) then
 
  kk = 0d0 
 
- open(33,file="./Data/Brazil/contact_all-sd.dat")
+ open(33,file="./data/Brazil/contact_all-sd.dat")
 
     do ii = 1,16
 
@@ -245,7 +228,7 @@ else if (cenario .eq. 3) then
 
  kk = 0d0 
 
- open(33,file="./Data/Brazil/contact_lockdown.dat")
+ open(33,file="./data/Brazil/contact_lockdown.dat")
 
     do ii = 1,16
 
@@ -256,6 +239,7 @@ else if (cenario .eq. 3) then
  close(33)
 
 end if
+
 
 
 
@@ -305,7 +289,7 @@ end do
 	theta(15) = 0.04280d0  !70-74
 	theta(16) = 0.07800d0  !75+
 
-  k = 0d0
+ k = 0d0
 
  mu = 0d0
 
@@ -366,8 +350,8 @@ end do
     do ii = 1,16
 
 	nu(1,ii) = 1d0/ptime
-	nu(2,ii) = (1d0-ef(ii))*1d0/imtime
-    	nu(3,ii) = ef(ii)*1d0/imtime
+	nu(2,ii) = (1d0-ef(ii))*1d0/7d0
+  	nu(3,ii) = ef(ii)*1d0/7d0
 
     end do
 
@@ -419,11 +403,114 @@ end do
 
  peso = peso/sum(peso)
 
-	 lambda = 0d0
+!#############
+!Dynamic
 
-		soma = 0d0
+ Hdia = 150			!number of horizontal pixels (corresponding to delay)
 
-        if (cenario .eq. 2) go to 1
+ Hcsi = 150 			!number of vertical pixels (corresponding to total vaccination rate)
+
+ dia = 20 			!inicial delay
+
+ csipop = 0d0 			!total initial vaccination rate
+
+ ddia = (150-dia)/(Hdia*1d0)
+
+ dcsi = (0.0050d0-csipop)/(1d0*Hcsi)
+
+write(string,*) int(ig)
+write(string1,*) int(R0*10)
+
+if (vacina .eq. 0) then
+
+    string2 =  'CV'
+
+end if
+
+!fx = age group
+!T = total population
+
+write(string3,*) cenario
+
+    open(10,file = 'dia-tx-fx1-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
+&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(20,file = 'dia-tx-fx2-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
+&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(30,file = 'dia-tx-fx3-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
+&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(40,file = 'dia-tx-fx4-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
+&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(50,file = 'dia-tx-fx5-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
+&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(60,file = 'dia-tx-fx6-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-&
+&'//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(70,file = 'dia-tx-fx7-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-&
+&'//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(80,file = 'dia-tx-fx8-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-&
+&'//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(90,file = 'dia-tx-fx9-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-&
+&'//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(100,file = 'dia-tx-fx10-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-&
+&'//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(110,file = 'dia-tx-fx11-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-&
+&'//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(120,file = 'dia-tx-fx12-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-&
+&'//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(130,file = 'dia-tx-fx13-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
+&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(140,file = 'dia-tx-fx14-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
+&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(150,file = 'dia-tx-fx15-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
+&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+    open(160,file = 'dia-tx-fx16-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
+&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+
+    open(170,file = 'dia-tx-T-ig'//trim(adjustl(string))//'-R0'&
+&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
+&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
+
+        do ifaixa = 1,16
+  
+    		write(ifaixa*10,*) "# delay # total vaccination rate # deaths group &
+&i / total population # deaths group i / population group i # deaths group i / total deaths &
+&# recovered (R + Rv + Rp**) group &
+&i / total population # recovered  (R + Rv + Rp**) group i / population group i # recovered&
+&  (R + Rv + Rp**) group i / total recovered (R + Rv + Rp**) #"
+
+        end do
+
+    		write(170,*) "# R0 # total vaccination rate # total deaths / &
+&total population # total recovered (R + Rv**)/ total population #"
+
+do diai = 1, Hdia
+
+    	print*,dia
+
+	lambda = 0d0
+		
+	!lambda = transmission rate per contact of infectious compartments (we consider the same for all)
+	!lambda(1,:) = lambda(2,:), inheritance from an old model, was not omitted as it does not change the results as all lambdas are equal
+	!note that the transmission rate per contact is the same for all compartments, with the exception of IP in which we include a reduction factor
+
+	soma = 0d0
+
+        if (cenario .eq. 2) go to 1 		!the comparation is based on social distancing
 
          kmedio = [6.066509213452985,&
         &10.930551348598055,&
@@ -442,15 +529,15 @@ end do
         &2.44983480267834,&
         &2.418587539545057]
 
-         kk = 0d0
+         kk = 0d0 
 
-         open(33,file="./Data/Brazil/contact_all-sd.dat")
+         open(33,file="./data/Brazil/contact_all-sd.dat")
 
-         do ii = 1,16
+            do ii = 1,16
 
                 read(33,*) kk(ii,:)
 
-         end do
+            end do
 
          close(33)
 
@@ -466,37 +553,32 @@ end do
 
          peso = peso/sum(peso)
 
-         1 continue
+        1 continue
 
-	do j = 1,16
+		do j = 1,16
 
-		do jj = 1,16
+			do jj = 1,16
 
-			soma = soma + (populacao(j)/poptotal)*(populacao(jj)/poptotal)*kmedio(j)*kmedio(jj)&
-			&*kk(j,jj)/(kmed*(beta(1,j)+beta(2,j)))*(1d0+beta(2,j)/(alfa(1,j)+alfa(2,j)))
+				soma = soma + (populacao(j)/poptotal)*(populacao(jj)/poptotal)*kmedio(j)*kmedio(jj)&
+	&*kk(j,jj)/(kmed*(beta(1,j)+beta(2,j)))*(1d0+beta(2,j)/(alfa(1,j)+alfa(2,j)))
 
-		end do
+			end do
 
-	end do	
+		end do	
 
-	!lambda = transmission rate per contact of infectious compartments (we consider the same for all)
-	!lambda(1,:) = lambda(2,:), inheritance from an old model, was not omitted as it does not change the results as all lambdas are equal
-	!note that the transmission rate per contact is the same for all compartments, with the exception of IP in which we include a reduction factor
+		lambda = R0/soma	!the transmission rate is calculated from the omega parameter (R0 of social distance)
 
-	lambda = R0/soma	!the transmission rate is calculated from the omega parameter (R0 of social distance)
+         	tau = 0d0
 
-        tau = 0d0
+	    	tau(1,:) = lambda(1,:)
+	    	tau(2,:) = beta(1,:)
 
-	tau(1,:) = lambda(1,:)
-	tau(2,:) = beta(1,:)
+	    	!tau(1,i) = lambda, the reduction factor for IP transmission is included in the equations
+	    	!tau(2,i) = alfa Rp
 
+        if (cenario .eq. 0) then	!here we go back to correcting the contact patterns for the considered scenario
 
-    	!tau(1,i) = lambda, the reduction factor for IP transmission is included in the equations
-    	!tau(2,i) = alfa Rp
-
-        if (cenario .eq. 0) then		!here we go back to correcting the contact patterns for the considered scenario
-
-   	      kmedio = [9.06104972622234,&
+         kmedio = [9.06104972622234,&
         &18.53416619469897,&
         &24.944777393540704,&
         &28.83814524492348,&
@@ -513,19 +595,22 @@ end do
         &3.6386329582863897,&
         &2.926288313680333]
 
-         	open(33,file="./Data/Brazil/contact_all.dat")
+            !com escola
 
-            	do ii = 1,16
 
-                	read(33,*) kk(ii,:)
+         open(33,file="./data/Brazil/contact_all.dat")
 
-            	end do
+            do ii = 1,16
 
-         	close(33)
+                read(33,*) kk(ii,:)
+
+            end do
+
+         close(33)
 
         else if (cenario .eq. 1) then
 
-         	kmedio = [8.49786590562505,&
+         kmedio = [8.49786590562505,&
         &11.775275350653459,&
         &16.102568319432287,&
         &18.66140733649442,&
@@ -542,21 +627,21 @@ end do
         &3.5519870345904874,&
         &2.892123631908877]
 
-         	kk = 0d0
+         kk = 0d0
 
-         	open(33,file="./Data/Brazil/contact_all-w_school.dat")
+         open(33,file="./data/Brazil/contact_all-w_school.dat")
 
-            	do ii = 1,16
+            do ii = 1,16
 
-                	read(33,*) kk(ii,:)
+                read(33,*) kk(ii,:)
 
-            	end do
+            end do
 
-         	close(33)
+         close(33)
 
         else if (cenario .eq. 2) then
 
-         	kmedio = [6.066509213452985,&
+         kmedio = [6.066509213452985,&
         &10.930551348598055,&
         &13.616615299414576,&
         &14.627455323011965,&
@@ -573,21 +658,21 @@ end do
         &2.44983480267834,&
         &2.418587539545057]
 
-         	kk = 0d0 
+         kk = 0d0 
 
-         	open(33,file="./Data/Brazil/contact_all-sd.dat")
+         open(33,file="./data/Brazil/contact_all-sd.dat")
 
-            	do ii = 1,16
+            do ii = 1,16
 
-                	read(33,*) kk(ii,:)
+                read(33,*) kk(ii,:)
 
-            	end do
+            end do
 
-         	close(33)
+         close(33)
 
         else if (cenario .eq. 3) then
 
-         	kmedio = [5.784915703083305,&
+         kmedio = [5.784915703083305,&
         &7.535414253794091,&
         &9.083154884909021,&
         &8.940805526782992,&
@@ -604,197 +689,103 @@ end do
         &2.40644339764307,&
         &2.4014630350224184]
 
-         	kk = 0d0 
+         kk = 0d0
 
-         	open(33,file="./Data/Brazil/contact_lockdown.dat")
+         open(33,file="./data/Brazil/contact_lockdown.dat")
 
-            	do ii = 1,16
+            do ii = 1,16
 
-                	read(33,*) kk(ii,:)
-
-            	end do
-
-         	close(33)
-
-        end if
-
-     	peso = 0d0
-
-     	do ii = 1,16
-
-        	peso(ii) = kmedio(ii)*populacao(ii)
-
-     	end do
-
-     	kmed = sum(peso)/poptotal
-
-     	peso = peso/sum(peso)
-
-	write(string,*) int(ig)
-	write(string1,*) dia
-	write(string3,*) cenario
-	write(string4,*) int(R0*10)
-	write(string5,*) int(csipop*10000)
-	if (vacina .eq. 0) then
-	    string2 =  'CV'
-	else
-	    string2 =  'Az-Pf'
-	end if
-
-	! fx i = age group i
-	! T = total population
-
-    	open(10,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx1-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(20,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx2-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(30,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx3-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(40,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx4-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(50,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx5-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(60,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx6-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(70,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx7-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(80,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx8-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-   	 open(90,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx9-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(100,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx10-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(110,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx11-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-   	 open(120,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx12-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(130,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx13-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(140,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx14-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(150,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx15-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-    	open(160,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-fx16-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-
-    	open(170,file = 'R0-'//trim(adjustl(string4))//'-tx-&
-&'//trim(adjustl(string5))//'-T-ig'//trim(adjustl(string))//'-dia'&
-&//trim(adjustl(string1))//'-'//trim(adjustl(string2))//'-cenario-'&
-&//trim(adjustl(string3))//'.dat') !write(i,'(5E20.8)')
-
-   	!ordem t, 1, 2, 3, 4, 6, 5, 7, 11, 12, 13, 14, 15, 17, 8, 9, 16, 10
-
-        do ifaixa = 1,16
-  
-    		write(ifaixa*10,*) "#t,S,E,A,I,R,D,S_V,E_V,A_V,I_V,R_V,D_V,P,S_P,I_P,R_P**,R_P* ## absolute values"
-
-        end do
-
-    	write(170,*) "#t,S,E,A,I,R,D,S_V,E_V,A_V,I_V,R_V,D_V,P,S_P,I_P,R_P**,R_P* ## absolute values"
-
-
-	!#############
-	!Dynamics
-
-	Nmedio = 0d0
-
-	do amost = 1, namost
-
-            faixa = 0
-
-            if (ig .eq. 2 .or. ig .eq. 3) then
-
-                faixa = 15
-
-            else if (ig .eq. 5) then
-
-                faixa = 6
-
-            else if (ig .eq. 6 .or. ig .eq. 8) then
-
-                faixa = 2
-
-            end if
-
-			N = 0d0
-
-            do iii = 1,16
-    
-                N(1,iii) = populacao(iii)
+                read(33,*) kk(ii,:)
 
             end do
 
-            N(2,amost) = 1d0				!initial condition, one exposed in the "amost" age group population
-            N(1,amost) = N(1,amost) - N(2,amost)
+         close(33)
 
-	    ti = t0
+        end if
 
-            csi = 0d0
+     peso = 0d0
 
-	    do ii = 1, HH
+     do ii = 1,16
 
-	          !csi(j,i) = vaccination rate j for each group i
-	          !j = 1 = S
-	          !j = 2 = E
-	          !j = 3 = A
-	          !j = 4 = I
-	          !j = 5 = R
+        peso(ii) = kmedio(ii)*populacao(ii)
 
-                  if (ii*h .ge. dia*1d0) then		!if time t has already reached the necessary delay to start vaccination
+     end do
 
-                    	if (ig .eq. 1) then
+     kmed = sum(peso)/poptotal
 
-                        	if (faixa .eq. 2) go to 10
-                        	if (faixa .eq. 3) go to 11
+     peso = peso/sum(peso)
+
+	csipop = 0d0		!sets the initial vaccination rate to 0
+
+	do csii = 1,Hcsi
+
+        	Nmedio = 0d0		
+
+		do amost = 1, namost
+
+            		faixa = 0
+
+           		 if (ig .eq. 2 .or. ig .eq. 3) then
+
+                		faixa = 15
+
+            		else if (ig .eq. 5) then
+
+                		faixa = 6
+
+            		else if (ig .eq. 6 .or. ig .eq. 8) then
+
+                		faixa = 2
+
+            		end if
+
+			N = 0d0
+
+            		do iii = 1,16
+    
+                		N(1,iii) = populacao(iii)
+
+            		end do
+
+            		N(2,amost) = 1d0				!initial condition, one exposed in the "amost" age group population
+            		N(1,amost) = N(1,amost) - N(2,amost)
+
+			ti = t0
+
+           		csi = 0d0
+
+			do ii = 1, HH
+
+	            		!csi(j,i) = vaccination rate j for each group i
+	            		!j = 1 = S
+	            		!j = 2 = E
+	            		!j = 3 = A
+	            		!j = 4 = I !SEMPRE 0
+	            		!j = 5 = R
+
+                   	 if (ii*h .ge. dia*1d0) then			!if time t has already reached the necessary delay to start vaccination
+
+                  	  if (ig .eq. 1) then
+
+                    		 if (faixa .eq. 2) go to 10
+                         	 if (faixa .eq. 3) go to 11
 
 		                if ((sum(N(1:6,13:16)))/sum(populacao(13:16)) .ge. 0.2d0) then
 
-!	                        	csi(:,1:12) = 0d0 
+!	                       		 csi(:,1:12) = 0d0 
 
-	                        	csi(:,13:16) = csipop*poptotal/(sum(N(1:3,13:16)) + sum(N(6,13:16)))
+	                       		 csi(:,13:16) = csipop*poptotal/(sum(N(1:3,13:16)) + sum(N(6,13:16)))
 
-                            		go to 666
+                           		 go to 666
 
-                        	end if
+                       		 end if
 
-                        	10 continue
+                       		 10 continue
 
 		                if (sum(N(1:6,5:12))/sum(populacao(5:12)) .ge. 0.2d0) then
 
-!	                        	csi(:,1:4) = 0d0
-                            		csi(:,5:16) = csipop*poptotal/(sum(N(1:3,5:16)) + sum(N(6,5:16)))
+!	                   		csi(:,1:4) = 0d0
+                          		csi(:,5:16) = csipop*poptotal/(sum(N(1:3,5:16)) + sum(N(6,5:16)))
                             		faixa = 2
 
                             		go to 666
@@ -808,13 +799,13 @@ end do
     	                    		csi = csipop*poptotal/(sum(N(1:3,:)) + sum(N(6,:)))
                             		faixa = 3   
 
-                       		 else
+                        	else
                 
-                            		csi = 0            
+                            	csi = 0            
 
-		          	end if
+		                end if
 
-                    else if (ig .eq. 2) then
+                    	else if (ig .eq. 2) then
 
                         	if (faixa .eq. 1) go to 201            
 
@@ -848,14 +839,13 @@ end do
 
     	                    		csi = csipop*poptotal/(sum(N(1:3,:)) + sum(N(6,:)))
 
-
                         	else
                 
                             		csi = 0           
 
-		        	end if
+		                end if
 
-                    else if (ig .eq. 3) then   
+                    	else if (ig .eq. 3) then   
 
                         	if (faixa .eq. 12) go to 301
                         	if (faixa .eq. 5) go to 302                                   
@@ -908,7 +898,7 @@ end do
                             		faixa = 5  
 
 
-                        	else
+                       		else
 
                             		csi = 0         
 
@@ -933,12 +923,12 @@ end do
 
                         	20 continue
 
-		                	if (sum(N(1:6,13:16))/sum(populacao(13:16)) .ge. 0.2d0) then
+		                if (sum(N(1:6,13:16))/sum(populacao(13:16)) .ge. 0.2d0) then
 
  !                           		csi(:,1:4) = 0d0
 	                        	csi(:,5:16) = csipop*poptotal/(sum(N(1:3,5:16)) + sum(N(6,5:16)))
                     
-                            		faixa = 2
+                           		faixa = 2
                             		go to 666
 
                         	end if
@@ -957,7 +947,7 @@ end do
 
 		                end if 
 
-                    else if (ig .eq. 5) then 
+                    	else if (ig .eq. 5) then 
 
                         	if (faixa .eq. 16) go to 501            
 
@@ -987,7 +977,7 @@ end do
 
                         	501 continue
                 
-                        	if (sum(N(1:6,5:16))/sum(populacao(5:16)) .ge. 0.005) then
+                       		if (sum(N(1:6,5:16))/sum(populacao(5:16)) .ge. 0.005) then
 
     	                    		csi(:,5:16) = csipop*poptotal/(sum(N(1:3,5:16)) + sum(N(6,5:16))) 
 
@@ -997,7 +987,7 @@ end do
 
 		                end if 
 
-                    else if (ig .eq. 6) then 
+                    	else if (ig .eq. 6) then 
 
                         	if (faixa .eq. 16) go to 601            
 
@@ -1007,7 +997,7 @@ end do
 
 	                        	csi(:,1) = csipop*poptotal/(sum(N(1:3,1)) + (N(6,1)))
 
-		                	else if ((sum(N(1:6,faixa)))/(populacao(faixa)) .ge. 0.2d0 .and. faixa .lt. 16) then
+		                else if ((sum(N(1:6,faixa)))/(populacao(faixa)) .ge. 0.2d0 .and. faixa .lt. 16) then
 
 !	                        	csi(:,1:faixa-1) = 0d0 
 
@@ -1037,7 +1027,7 @@ end do
 
 		                end if  
 
-                    else if (ig .eq. 7) then 
+                    	else if (ig .eq. 7) then 
 
                         	if (sum(N(1:6,5:16))/poptotal .ge. 0.005) then
 
@@ -1049,15 +1039,15 @@ end do
 
 		                end if  
 
-                    else if (ig .eq. 8) then 
+                    	else if (ig .eq. 8) then 
 
-                       		if (faixa .eq. 16) go to 801            
+                        	if (faixa .eq. 16) go to 801            
 
 		                if ((sum(N(1:6,int(kmedioaux(1,1)))))/populacao(int(kmedioaux(1,1))) .ge. 0.2d0) then
 
 !	                        	csi(:,1:15) = 0d0 
 
-	                       		csi(:,int(kmedioaux(1,1))) = csipop*poptotal/(sum(N(1:3,int(kmedioaux(1,1))))&
+	                        	csi(:,int(kmedioaux(1,1))) = csipop*poptotal/(sum(N(1:3,int(kmedioaux(1,1))))&
 & + (N(6,int(kmedioaux(1,1)))))
 
 		                else if ((sum(N(1:6,int(kmedioaux(1,faixa)))))/(populacao(int(kmedioaux(1,faixa))))&
@@ -1071,7 +1061,7 @@ end do
 
                                 		soma = soma + (sum(N(1:3,int(kmedioaux(1,jj)))) + (N(6,int(kmedioaux(1,jj)))))
 
-                           		end do
+                            		end do
 
                             		do jj = 1,faixa
 
@@ -1115,189 +1105,195 @@ end do
 
 		                end if 
 
-                    end if
+                    	end if
 
-                    666 continue
+                    	666 continue
 
-                    csi(4,:) = 0		  !the vaccination rate for the infected is always 0 (they don't get vaccinated)
+                    	csi(4,:) = 0		  !the vaccination rate for the infected is always 0 (they don't get vaccinated)
     
-                else
+               	       else
     
-                    csi = 0d0
+                    		csi = 0d0
 
-                end if
+              	        end if
 
-		Naux = N
+			Naux = N
 
-		ti = ti + h
+			ti = ti + h
 
-		do jj = 1,16
+			do jj = 1,16
 
-	        	soma = 0d0
+	                	soma = 0d0
 
-			do l = 1,16		 !Runge-Kutta fourth order numerical integration
+	                	do l = 1,16
 
-				soma = soma + kmedio(jj)*kk(jj,l)*(Naux(3,l) + Naux(4,l) + Naux(12,l) + Naux(13,l) + gama*Naux(9,l))/poptotal
+		                	soma = soma + kmedio(jj)*kk(jj,l)*(Naux(3,l) + Naux(4,l) + Naux(12,l) + Naux(13,l) + gama*Naux(9,l))/poptotal
+
+	                	end do
+
+				do j = 1,17
+
+					k(j,jj,1) = h*dt(j,jj,Naux,lambda,csi,mu,beta,alfa,gama,nu,&
+					&tau,kk,kmedio,poptotal,soma)
+
+				end do
 
 			end do
 
-			do j = 1,17
+			do jj = 1,16
 
-				k(j,jj,1) = h*dt(j,jj,Naux,lambda,csi,mu,beta,alfa,gama,nu,&
-				&tau,kk,kmedio,poptotal,soma,alfadp)
+				do j = 1,17
 
-			end do
-
-		end do
-
-		do jj = 1,16
-
-			do j = 1,17
-
-				Naux(j,jj) = N(j,jj) + k(j,jj,1)*0.5d0
+					Naux(j,jj) = N(j,jj) + k(j,jj,1)*0.5d0
 					
+				end do
+
 			end do
 
-		end do
+			do jj = 1,16
 
-		do jj = 1,16
+	                	soma = 0d0
 
-	       		soma = 0d0
+	                	do l = 1,16
 
-	 		do l = 1,16
+		               		soma = soma + kmedio(jj)*kk(jj,l)*(Naux(3,l) + Naux(4,l) + Naux(12,l) + Naux(13,l) + gama*Naux(9,l))/poptotal
 
-		                soma = soma + kmedio(jj)*kk(jj,l)*(Naux(3,l) + Naux(4,l) + Naux(12,l) + Naux(13,l) + gama*Naux(9,l))/poptotal
+	                	end do
 
-	                end do
+				do j = 1,17
 
-			do j = 1,17
-
-				k(j,jj,2) = h*dt(j,jj,Naux,lambda,csi,mu,beta,alfa,gama,nu,&
-				&tau,kk,kmedio,poptotal,soma,alfadp)
+					k(j,jj,2) = h*dt(j,jj,Naux,lambda,csi,mu,beta,alfa,gama,nu,&
+				&tau,kk,kmedio,poptotal,soma)
 					
+				end do
+
 			end do
 
-		end do
+			do jj = 1,16
 
-		do jj = 1,16
+				do j = 1,17
 
-			do j = 1,17
-
-				Naux(j,jj) = N(j,jj) + k(j,jj,2)*0.5d0
+					Naux(j,jj) = N(j,jj) + k(j,jj,2)*0.5d0
 					
+				end do
+
 			end do
 
-		end do
+			do jj = 1,16
 
-		do jj = 1,16
+	                	soma = 0d0
 
-	        	soma = 0d0
+	                	do l = 1,16
 
-	                do l = 1,16
+		                	soma = soma + kmedio(jj)*kk(jj,l)*(Naux(3,l) + Naux(4,l) + Naux(12,l) + Naux(13,l) + gama*Naux(9,l))/poptotal
 
-		                soma = soma + kmedio(jj)*kk(jj,l)*(Naux(3,l) + Naux(4,l) + Naux(12,l) + Naux(13,l) + gama*Naux(9,l))/poptotal
+	                	end do
 
-	                end do
+				do j = 1,17
 
-			do j = 1,17
-
-				k(j,jj,3) = h*dt(j,jj,Naux,lambda,csi,mu,beta,alfa,gama,nu,&
-				&tau,kk,kmedio,poptotal, soma,alfadp)
+					k(j,jj,3) = h*dt(j,jj,Naux,lambda,csi,mu,beta,alfa,gama,nu,&
+				&tau,kk,kmedio,poptotal, soma)
 					
+				end do
+
 			end do
 
-		end do
+			do jj = 1,16
 
-		do jj = 1,16
+				do j = 1,17
 
-			do j = 1,17
-
-				Naux(j,jj) = N(j,jj) + k(j,jj,3)
+					Naux(j,jj) = N(j,jj) + k(j,jj,3)
 					
+				end do
+
 			end do
 
-		end do
+			do jj = 1,16
 
-		do jj = 1,16
+	                	soma = 0d0
 
-	        	soma = 0d0
+	                	do l = 1,16
 
-	                do l = 1,16
+		                	soma = soma + kmedio(jj)*kk(jj,l)*(Naux(3,l) + Naux(4,l) + Naux(12,l) + Naux(13,l) + gama*Naux(9,l))/poptotal
 
-		                soma = soma + kmedio(jj)*kk(jj,l)*(Naux(3,l) + Naux(4,l) + Naux(12,l) + Naux(13,l) + gama*Naux(9,l))/poptotal
+	                	end do
 
-	                end do
+				do j = 1,17
 
-			do j = 1,17
-
-				k(j,jj,4) = h*dt(j,jj,Naux,lambda,csi,mu,beta,alfa,gama,nu&
-				&,tau,kk,kmedio,poptotal,soma,alfadp)
+					k(j,jj,4) = h*dt(j,jj,Naux,lambda,csi,mu,beta,alfa,gama,nu&
+				&,tau,kk,kmedio,poptotal,soma)
 	
+				end do
+
 			end do
 
-		end do
+			do jj = 1,16
 
-		do jj = 1,16
+				do j = 1,17
 
-			do j = 1,17
-
-				N(j,jj) = N(j,jj) + 1d0/6d0*(k(j,jj,1) + 2*k(j,jj,2) + 2*k(j,jj,3) + k(j,jj,4))
+					N(j,jj) = N(j,jj) + 1d0/6d0*(k(j,jj,1) + 2*k(j,jj,2) + 2*k(j,jj,3) + k(j,jj,4))
 					
+				end do
+
 			end do
 
-		end do
+			do jj = 1,16
 
-		do jj = 1,16
+				do j = 1,17
 
-			do j = 1,17
-
-				Nmedio(ii,j,jj) = Nmedio(ii,j,jj) + N(j,jj)*peso(amost)
+					Nmedio(ii,j,jj) = Nmedio(ii,j,jj) + N(j,jj)*peso(amost)
 					
+				end do
+
 			end do
 
 		end do
 
 	end do
 
-     end do
-
-   ti = t0
-
-   !ordem t, 1, 2, 3, 4, 6, 5, 7, 11, 12, 13, 14, 15, 17, 8, 9, 16, 10
-
-do ii = 1,HH
+	ti = t0
 
         do ifaixa = 1,16
     
-    		write(ifaixa*10,'(18E20.8)') ti, (Nmedio(ii,1,ifaixa)), (Nmedio(ii,2,ifaixa)), (Nmedio(ii,3,ifaixa)),&
-& (Nmedio(ii,4,ifaixa)), (Nmedio(ii,6,ifaixa)), (Nmedio(ii,5,ifaixa)), (Nmedio(ii,7,ifaixa)), (Nmedio(ii,11,ifaixa)), &
-&(Nmedio(ii,12,ifaixa)), (Nmedio(ii,13,ifaixa)), (Nmedio(ii,14,ifaixa)), (Nmedio(ii,15,ifaixa)), (Nmedio(ii,17,ifaixa))&
-&, (Nmedio(ii,8,ifaixa)), (Nmedio(ii,9,ifaixa)), (Nmedio(ii,16,ifaixa)), (Nmedio(ii,10,ifaixa))
+    		write(ifaixa*10,'(8E20.8)') dia, csipop, (Nmedio(HH,5,ifaixa) + Nmedio(HH,15,ifaixa))/poptotal, &
+&(Nmedio(HH,5,ifaixa) + Nmedio(HH,15,ifaixa))/sum(Nmedio(HH,:,ifaixa)), (Nmedio(HH,5,ifaixa) +&
+& Nmedio(HH,15,ifaixa))/(sum(Nmedio(HH,5,:)) + sum(Nmedio(HH,15,:))),  (Nmedio(HH,6,ifaixa) + &
+&Nmedio(HH,14,ifaixa)+Nmedio(HH,16,ifaixa))/poptotal, (Nmedio(HH,6,ifaixa) + Nmedio(HH,14,ifaixa)&
+&+Nmedio(HH,16,ifaixa))/sum(Nmedio(HH,:,ifaixa)), (Nmedio(HH,6,ifaixa) + Nmedio(HH,14,ifaixa)+&
+&Nmedio(HH,16,ifaixa))/(sum(Nmedio(HH,6,:)) + sum(Nmedio(HH,14,:)) + sum(Nmedio(HH,16,:)))
 
         end do
 
-    	write(170,'(18E20.8)') ti, sum(Nmedio(ii,1,:)), sum(Nmedio(ii,2,:)), sum(Nmedio(ii,3,:)),&
-& sum(Nmedio(ii,4,:)), sum(Nmedio(ii,6,:)), sum(Nmedio(ii,5,:)), sum(Nmedio(ii,7,:)), sum(Nmedio(ii,11,:)), &
-&sum(Nmedio(ii,12,:)), sum(Nmedio(ii,13,:)), sum(Nmedio(ii,14,:)), sum(Nmedio(ii,15,:)), sum(Nmedio(ii,17,:))&
-&, sum(Nmedio(ii,8,:)), sum(Nmedio(ii,9,:)), sum(Nmedio(ii,16,:)), sum(Nmedio(ii,10,:))
+	write(170,'(8E20.8)') dia, csipop, (sum(Nmedio(HH,5,:)) + sum(Nmedio(HH,15,:)))/poptotal, &
+&(sum(Nmedio(HH,6,:)) + sum(Nmedio(HH,14,:)))/poptotal, sum(Nmedio(HH,10,:))/poptotal, sum(Nmedio(HH,16,:))/poptotal
 
-	ti = ti + h
+	csipop = csipop + dcsi
+
+   end do
+
+   dia = dia + ddia
+
+   do ifaixa = 1,17
+    
+        write(ifaixa*10,*) ""
+	
+   end do
 
 end do
 
 end program sirs
 
-real*8 function dt(j,jj,N,lambda,csi,mu,beta,alfa,gama,nu,tau,kk,kmedio,poptotal, soma,alfadp)
+real*8 function dt(j,jj,N,lambda,csi,mu,beta,alfa,gama,nu,tau,kk,kmedio,poptotal, soma)
 integer :: j, jj
 real*8 :: lambda(2,16), csi(5,16), mu(2,16), beta(4,16), alfa(4,16), nu(3,16), tau(2,16), N(17,16), &
-&Naux(17,16),kk(16,16),kmedio(16), alfadp(16)
+&Naux(17,16),kk(16,16),kmedio(16)
 real*8 :: soma, gama, poptotal
 
 if (j .eq. 1) then			!S
 
 	dt = -lambda(1,jj)*N(1,jj)*soma - csi(1,jj)*N(1,jj)
 
-else if (j .eq. 2) then 		!E
+else if (j .eq. 2) then			!E
 
 	dt = lambda(1,jj)*N(1,jj)*soma - (csi(2,jj) + mu(1,jj))*N(2,jj)
 
@@ -1307,12 +1303,11 @@ else if (j .eq. 3) then			!A
 
 else if (j .eq. 4) then			!I
 
-
 	dt = beta(2,jj)*N(3,jj) - (alfa(1,jj) + alfa(2,jj))*N(4,jj)
 
 else if (j .eq. 5) then			!D
 
-	dt = alfa(2,jj)*N(4,jj)
+	dt = alfa(2,jj)*N(4,jj)	
 
 else if (j .eq. 6) then			!R
 
@@ -1322,15 +1317,15 @@ else if (j .eq. 7) then			!Sv
 
 	dt = -lambda(2,jj)*N(7,jj)*soma + csi(1,jj)*N(1,jj) - nu(1,jj)*N(7,jj)
 
-else if (j .eq. 8) then			!Sp
+else if (j .eq. 8) then 		!Sp
 
 	dt = nu(2,jj)*N(17,jj) - tau(1,jj)*N(8,jj)*soma
 
 else if (j .eq. 9) then			!Ip
 
-	dt = tau(1,jj)*(N(8,jj)+N(17,jj))*soma - tau(2,jj)*N(9,jj) - alfadp(jj)*N(9,jj)
+	dt = tau(1,jj)*(N(8,jj)+N(17,jj))*soma - tau(2,jj)*N(9,jj)
 
-else if (j .eq. 10) then		!"Rp*" (Completamente imunizados vindos de P) 
+else if (j .eq. 10) then		!"Rp" (Completamente imunizados vindos de P) 
 
 	dt = nu(3,jj)*N(17,jj)
 
@@ -1346,15 +1341,15 @@ else if (j .eq. 13) then		!Iv
 
 	dt = beta(3,jj)*N(12,jj) - (alfa(3,jj)+alfa(4,jj))*N(13,jj)
 
-else if (j .eq. 14) then
+else if (j .eq. 14) then		!Rv
 
 	dt = alfa(4,jj)*N(13,jj) + beta(4,jj)*N(12,jj) + csi(5,jj)*N(6,jj)
 
-else if (j .eq. 15) then		!Rv
+else if (j .eq. 15) then		!Dv
 
-	dt = alfa(3,jj)*N(13,jj) + alfadp(jj)*N(9,jj)
+	dt = alfa(3,jj)*N(13,jj)
 
-else if (j .eq. 16) then		!"Rp**" (Vacinados protegidos recuperados vindos a partir do Ip)
+else if (j .eq. 16) then		!"Rp" (Vacinados protegidos recuperados vindos a partir do Ip)
 
 	dt = tau(2,jj)*N(9,jj)
 

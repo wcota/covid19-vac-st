@@ -1,7 +1,7 @@
 
 **Description of main parameters:**
 
-	1. *R0*: R0 value
+	1. _*R0*:_ R0 value
 	2. *tx*: value of vaccination rate x 1e5
 	3. *dia*: delay in starting vaccination
 	4. *ig*: Strategies used

@@ -75,7 +75,7 @@ vacina = 0
 ef = 0			!where the data will be stored for effectiveness against infection
 reducao = 0		!where data will be stored for effectiveness against deaths
 
-open(1,file="./data/vaccines-data.dat")		!reads the efficacy data of the vaccine considered
+open(1,file="../data/vaccines-data.dat")		!reads the efficacy data of the vaccine considered
 
 read(1,*)
 
@@ -117,7 +117,7 @@ if (cenario .eq. 0) then		!these if's will read the contact patterns equivalent 
 &3.6386329582863897,&
 &2.926288313680333]
 
- open(33,file="./data/Brazil/contact_all.dat")
+ open(33,file="../data/Brazil/contact_all.dat")
 
     do ii = 1,16
 
@@ -148,7 +148,7 @@ else if (cenario .eq. 1) then
 
  kk = 0d0 
 
- open(33,file="./data/Brazil/contact_all-w_school.dat")
+ open(33,file="../data/Brazil/contact_all-w_school.dat")
 
     do ii = 1,16
 
@@ -179,7 +179,7 @@ else if (cenario .eq. 2) then
 
  kk = 0d0
 
- open(33,file="./data/Brazil/contact_all-sd.dat")
+ open(33,file="../data/Brazil/contact_all-sd.dat")
 
     do ii = 1,16
 
@@ -210,7 +210,7 @@ else if (cenario .eq. 3) then
 
  kk = 0d0
 
- open(33,file="./data/Brazil/contact_lockdown.dat")
+ open(33,file="../data/Brazil/contact_lockdown.dat")
 
     do ii = 1,16
 
@@ -511,7 +511,7 @@ do r0i = 1, HR0
 
          kk = 0d0 
 
-         open(33,file="./data/Brazil/contact_all-sd.dat")
+         open(33,file="../data/Brazil/contact_all-sd.dat")
 
             do ii = 1,16
 
@@ -576,7 +576,7 @@ do r0i = 1, HR0
         &2.926288313680333]
 
 
-         open(33,file="./data/Brazil/contact_all.dat")
+         open(33,file="../data/Brazil/contact_all.dat")
 
             do ii = 1,16
 
@@ -607,7 +607,7 @@ do r0i = 1, HR0
 
          kk = 0d0 
 
-         open(33,file="./data/Brazil/contact_all-w_school.dat")
+         open(33,file="../data/Brazil/contact_all-w_school.dat")
 
             do ii = 1,16
 
@@ -638,7 +638,7 @@ do r0i = 1, HR0
 
          kk = 0d0 
 
-         open(33,file="./data/Brazil/contact_all-sd.dat")
+         open(33,file="../data/Brazil/contact_all-sd.dat")
 
             do ii = 1,16
 
@@ -669,7 +669,7 @@ do r0i = 1, HR0
 
          kk = 0d0 
 
-         open(33,file="./data/Brazil/contact_lockdown.dat")
+         open(33,file="../data/Brazil/contact_lockdown.dat")
 
             do ii = 1,16
 

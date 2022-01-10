@@ -84,11 +84,17 @@
 		Fortran(Gfortran):
 
 			*gfortran program.f90 -o exec
-			*./exec
 
 		Fortran(Intel):
 
 			*ifort program.f90 -o exec
+			
+		Once compiled, you can run the program in the background with the following command:
+		
+			*nohup time ./exec > file.dat &
+			
+		Where in the *file.dat* all the information that would be printed in the terminal will be written. Or you can run directly on the terminal with:
+		
 			*./exec
 
 

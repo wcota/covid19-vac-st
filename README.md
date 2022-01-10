@@ -10,7 +10,7 @@ In this repository we show only the codes for the simulations.
 All codes and data are available in the folder `codes`. Each `*.f90` inside `codes/main` and `codes/supp` folders correspond to the respective figure in the main paper and supplementary material, respectively. The data (contact matrices and vaccine efficacies) are available at a common folder `codes/data`, with files:
 
 - `vaccines-data.dat`: file with four columns - reduction in deaths with Vaxzevria, CoronaVac, and of infections with Vaxzevria and CoronaVac, respectively.
-- `<country>/contact_<contact>.dat`: contact matrix C<sub>ij</sub> (16x16) for each `<country>` and contact scenarios `all`  (unmitigated) and `all-sd` (social distancing).
+- `<country>/contact_<contact>.dat`: contact matrix C<sub>ij</sub> (16x16) for each `<country>` (Brazil, Germany or Uganda) and contact scenarios `<cenario>` - `all`  (unmitigated) or `all-sd` (social distancing).
 
 ## How to run
 
@@ -28,7 +28,7 @@ Some of the `*.f90` codes generates the time evolution data, and others the heat
 The parameters used in the codes are the following:
 
 1. `R0`: infection rate parameter ϖ
-2. `csipop`: value of vaccination rate
+2. `csipop`: value of vaccination rate ξ
 3. `dia`: days to start the vaccination (t<sub>v</sub>)
 4. `ig`: One of the following prioritization strategies:
 	- `2`: DAP strategy

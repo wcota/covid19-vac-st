@@ -18,7 +18,7 @@ The preprint is available at <https://arxiv.org/abs/2201.02869>. The following `
 }
 ```
 
-See also <https://arxiv.org/abs/2201.03476> and <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.2.043306>.
+See also *[Compartmental epidemic model to assess undocumented infections: applications to SARS-CoV-2 epidemics in Brazil](https://arxiv.org/abs/2201.03476)* and *[Outbreak diversity in epidemic waves propagating through distinct geographical scales](https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.2.043306)*.
 
 ## Folder structure
 

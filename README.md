@@ -1,9 +1,24 @@
 
-# Code for *Effects of infection fatality ratio and social contact matrices on vaccine prioritization strategies*
+# Code for *[Effects of infection fatality ratio and social contact matrices on vaccine prioritization strategies](https://arxiv.org/abs/2201.02869)*
 
 The codes for simulations were written in Fortran and compiled with the Intel Fortran Compiler. Data analysis and figures were done Python 3.10 and the following open source libraries: [pandas](https://pandas.pydata.org/), [matplotlib](https://matplotlib.org/), and [seaborn](https://seaborn.pydata.org/).
 
 In this repository we show only the codes for the simulations.
+
+The preprint is available at <https://arxiv.org/abs/2201.02869>. The following `BibTeX` code can be used to cite it:
+
+```
+@misc{schulenburg2022effects,
+      title={Effects of infection fatality ratio and social contact matrices on vaccine prioritization strategies}, 
+      author={Arthur Schulenburg and Wesley Cota and Guilherme S. Costa and Silvio C. Ferreira},
+      year={2022},
+      eprint={2201.02869},
+      archivePrefix={arXiv},
+      primaryClass={q-bio.PE}
+}
+```
+
+See also <https://arxiv.org/abs/2201.03476> and <https://journals.aps.org/prresearch/abstract/10.1103/PhysRevResearch.2.043306>.
 
 ## Folder structure
 
